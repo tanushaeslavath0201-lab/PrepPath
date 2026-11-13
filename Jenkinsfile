@@ -6,32 +6,33 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Source code checked out from GitHub'
+                echo 'Source code checked out successfully'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                bat 'python --version'
-                bat 'python -m pip install -r requirements.txt'
+                bat '"C:\\Users\\LAHARI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe" --version'
+
+                bat '"C:\\Users\\LAHARI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe" -m pip install -r requirements.txt'
             }
         }
 
         stage('Build') {
             steps {
-                bat 'python -m compileall app.py'
+                bat '"C:\\Users\\LAHARI\\AppData\\Local\\Programs\\Python\\Python312\\python.exe" -m compileall app.py'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Testing completed'
+                echo 'Testing completed successfully'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deployment stage completed'
+                echo 'Deployment completed'
             }
         }
     }

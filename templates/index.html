@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepPath - Placement Tracker</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>PrepPath</h2>
+    <p class="tagline">Your Placement Journey</p>
+
+    <button onclick="showPage('dashboard')">Dashboard</button>
+    <button onclick="showPage('aptitude')">Aptitude</button>
+    <button onclick="showPage('coding')">Coding</button>
+    <button onclick="showPage('interview')">Interview</button>
+    <button onclick="showPage('companies')">Companies</button>
+</div>
+
+<div class="main">
+
+    <header>
+        <div>
+            <h1>Placement Preparation Tracker</h1>
+            <p>Prepare smarter. Track your progress. Get placed.</p>
+        </div>
+        <span class="profile">Student</span>
+    </header>
+
+    <!-- DASHBOARD -->
+
+    <section id="dashboard" class="page">
+        <h2>Dashboard Overview</h2>
+
+        <div class="cards">
+            <div class="card">
+                <p>Total Tasks</p>
+                <h2 id="total">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Completed Tasks</p>
+                <h2 id="completed">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Companies Applied</p>
+                <h2 id="companiesCount">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Overall Progress</p>
+                <h2 id="progress">0%</h2>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Preparation Progress</h3>
+            <div class="progress-bg">
+                <div id="progressBar"></div>
+            </div>
+            <p id="progressText">0% Completed</p>
+        </div>
+
+        <div class="panel">
+            <h3>Category Summary</h3>
+            <p>Aptitude Topics: <span id="aptitudeCount">0</span></p>
+            <p>Coding Problems: <span id="codingCount">0</span></p>
+            <p>Interview Questions: <span id="interviewCount">0</span></p>
+        </div>
+    </section>
+
+    <!-- APTITUDE -->
+
+    <section id="aptitude" class="page hidden">
+        <h2>Aptitude Preparation</h2>
+
+        <div class="panel">
+            <input id="aptitudeTitle" placeholder="Enter aptitude topic">
+            <button onclick="addTask('Aptitude','aptitudeTitle')">
+                Add Topic
+            </button>
+        </div>
+
+        <div id="aptitudeList"></div>
+    </section>
+
+    <!-- CODING -->
+
+    <section id="coding" class="page hidden">
+        <h2>Coding Practice</h2>
+
+        <div class="panel">
+            <input id="codingTitle" placeholder="Enter problem name">
+
+            <select id="codingDifficulty">
+                <option>Easy</option>
+                <option>Medium</option>
+                <option>Hard</option>
+            </select>
+
+            <button onclick="addTask('Coding','codingTitle')">
+                Add Problem
+            </button>
+        </div>
+
+        <div id="codingList"></div>
+    </section>
+
+    <!-- INTERVIEW -->
+
+    <section id="interview" class="page hidden">
+        <h2>Interview Preparation</h2>
+
+        <div class="panel">
+            <input id="interviewTitle" placeholder="Enter interview question">
+
+            <button onclick="addTask('Interview','interviewTitle')">
+                Add Question
+            </button>
+        </div>
+
+        <div id="interviewList"></div>
+    </section>
+
+    <!-- COMPANIES -->
+
+    <section id="companies" class="page hidden">
+        <h2>Company Application Tracker</h2>
+
+        <div class="panel">
+            <input id="companyName" placeholder="Company Name">
+            <input id="companyRole" placeholder="Job Role">
+
+            <select id="companyStatus">
+                <option>Applied</option>
+                <option>Assessment</option>
+                <option>Interview</option>
+                <option>Selected</option>
+                <option>Rejected</option>
+            </select>
+
+            <button onclick="addCompany()">Add Company</button>
+        </div>
+
+        <div id="companyList"></div>
+    </section>
+
+</div>
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>

@@ -1,142 +1,107 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>PrepPath - Placement Tracker</title>
-    <link rel="stylesheet" href="/static/style.css">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="sidebar">
-    <h2>PrepPath</h2>
+<aside class="sidebar">
+
+    <div class="brand">PrepPath</div>
     <p class="tagline">Your Placement Journey</p>
 
-    <button onclick="showPage('dashboard')">Dashboard</button>
-    <button onclick="showPage('aptitude')">Aptitude</button>
-    <button onclick="showPage('coding')">Coding</button>
-    <button onclick="showPage('interview')">Interview</button>
-    <button onclick="showPage('companies')">Companies</button>
-</div>
+    <nav>
+        <button class="nav-link active" data-view="dashboard">
+            Dashboard
+        </button>
 
-<div class="main">
+        <button class="nav-link" data-view="aptitude">
+            Aptitude
+        </button>
 
-    <header>
+        <button class="nav-link" data-view="coding">
+            Coding
+        </button>
+
+        <button class="nav-link" data-view="interview">
+            Interview
+        </button>
+
+        <button class="nav-link" data-view="companies">
+            Companies
+        </button>
+    </nav>
+
+</aside>
+
+<main class="main">
+
+    <header class="page-header">
         <div>
             <h1>Placement Preparation Tracker</h1>
             <p>Prepare smarter. Track your progress. Get placed.</p>
         </div>
-        <span class="profile">Student</span>
+
+        <span class="student-pill">Student</span>
     </header>
+
 
     <!-- DASHBOARD -->
 
-    <section id="dashboard" class="page">
-        <h2>Dashboard Overview</h2>
+    <section id="dashboard-view" class="view">
 
-        <div class="cards">
-            <div class="card">
-                <p>Total Tasks</p>
-                <h2 id="total">0</h2>
-            </div>
-
-            <div class="card">
-                <p>Completed Tasks</p>
-                <h2 id="completed">0</h2>
-            </div>
-
-            <div class="card">
-                <p>Companies Applied</p>
-                <h2 id="companiesCount">0</h2>
-            </div>
-
-            <div class="card">
-                <p>Overall Progress</p>
-                <h2 id="progress">0%</h2>
+        <div class="welcome-row">
+            <div>
+                <h2>Your preparation overview</h2>
+                <p>A topic is completed only after a 100% quiz score.</p>
             </div>
         </div>
 
-        <div class="panel">
-            <h3>Preparation Progress</h3>
-            <div class="progress-bg">
-                <div id="progressBar"></div>
-            </div>
-            <p id="progressText">0% Completed</p>
+        <div class="stats-grid">
+
+            <article class="stat-card">
+                <span>Overall completion</span>
+                <strong id="overall-percent">0%</strong>
+
+                <div class="progress-track">
+                    <div id="overall-bar" class="progress-fill"></div>
+                </div>
+            </article>
+
+            <article class="stat-card">
+                <span>Topics completed</span>
+                <strong id="completed-count">0 / 6</strong>
+                <small>Only 100% scores count</small>
+            </article>
+
+            <article class="stat-card">
+                <span>Topics pending</span>
+                <strong id="pending-count">6</strong>
+                <small>Retake quizzes to improve</small>
+            </article>
+
         </div>
 
-        <div class="panel">
-            <h3>Category Summary</h3>
-            <p>Aptitude Topics: <span id="aptitudeCount">0</span></p>
-            <p>Coding Problems: <span id="codingCount">0</span></p>
-            <p>Interview Questions: <span id="interviewCount">0</span></p>
-        </div>
-    </section>
+        <h2 class="section-heading">Your learning sections</h2>
 
-    <!-- APTITUDE -->
+        <div id="dashboard-sections" class="section-cards"></div>
 
-    <section id="aptitude" class="page hidden">
-        <h2>Aptitude Preparation</h2>
+        <h2 class="section-heading">Company Application Tracker</h2>
 
-        <div class="panel">
-            <input id="aptitudeTitle" placeholder="Enter aptitude topic">
-            <button onclick="addTask('Aptitude','aptitudeTitle')">
-                Add Topic
-            </button>
-        </div>
+        <div class="panel company-form">
 
-        <div id="aptitudeList"></div>
-    </section>
+            <input id="company-name" placeholder="Company Name">
 
-    <!-- CODING -->
+            <input id="job-role" placeholder="Job Role">
 
-    <section id="coding" class="page hidden">
-        <h2>Coding Practice</h2>
-
-        <div class="panel">
-            <input id="codingTitle" placeholder="Enter problem name">
-
-            <select id="codingDifficulty">
-                <option>Easy</option>
-                <option>Medium</option>
-                <option>Hard</option>
-            </select>
-
-            <button onclick="addTask('Coding','codingTitle')">
-                Add Problem
-            </button>
-        </div>
-
-        <div id="codingList"></div>
-    </section>
-
-    <!-- INTERVIEW -->
-
-    <section id="interview" class="page hidden">
-        <h2>Interview Preparation</h2>
-
-        <div class="panel">
-            <input id="interviewTitle" placeholder="Enter interview question">
-
-            <button onclick="addTask('Interview','interviewTitle')">
-                Add Question
-            </button>
-        </div>
-
-        <div id="interviewList"></div>
-    </section>
-
-    <!-- COMPANIES -->
-
-    <section id="companies" class="page hidden">
-        <h2>Company Application Tracker</h2>
-
-        <div class="panel">
-            <input id="companyName" placeholder="Company Name">
-            <input id="companyRole" placeholder="Job Role">
-
-            <select id="companyStatus">
+            <select id="company-status">
                 <option>Applied</option>
                 <option>Assessment</option>
                 <option>Interview</option>
@@ -144,15 +109,100 @@
                 <option>Rejected</option>
             </select>
 
-            <button onclick="addCompany()">Add Company</button>
+            <button id="add-company" class="primary-btn">
+                Add Company
+            </button>
+
         </div>
 
-        <div id="companyList"></div>
+        <div id="dashboard-companies" class="company-list"></div>
+
     </section>
 
-</div>
 
-<script src="/static/script.js"></script>
+    <!-- APTITUDE / CODING / INTERVIEW TOPICS -->
+
+    <section id="quiz-list-view" class="view hidden">
+
+        <div class="section-intro">
+            <h2 id="section-title">Aptitude</h2>
+            <p>Select a topic and attempt its quiz.</p>
+        </div>
+
+        <div id="topic-list" class="topic-grid"></div>
+
+    </section>
+
+
+    <!-- QUIZ QUESTIONS -->
+
+    <section id="quiz-view" class="view hidden">
+
+        <button id="back-to-topics" class="text-btn">
+            ← Back to topics
+        </button>
+
+        <div class="quiz-heading">
+
+            <div>
+                <p class="eyebrow" id="quiz-section-label"></p>
+                <h2 id="quiz-topic-title"></h2>
+            </div>
+
+            <span id="question-count" class="student-pill"></span>
+
+        </div>
+
+        <form id="quiz-form">
+
+            <div id="question-container"></div>
+
+            <button type="submit" class="primary-btn submit-btn">
+                Submit Quiz
+            </button>
+
+        </form>
+
+        <div id="quiz-result" class="result-panel hidden"></div>
+
+    </section>
+
+
+    <!-- COMPANY PAGE -->
+
+    <section id="companies-view" class="view hidden">
+
+        <h2>Company Application Tracker</h2>
+
+        <p>Track your job applications and interview stages.</p>
+
+        <div class="panel company-form">
+
+            <input id="company-name-page" placeholder="Company Name">
+
+            <input id="job-role-page" placeholder="Job Role">
+
+            <select id="company-status-page">
+                <option>Applied</option>
+                <option>Assessment</option>
+                <option>Interview</option>
+                <option>Selected</option>
+                <option>Rejected</option>
+            </select>
+
+            <button id="add-company-page" class="primary-btn">
+                Add Company
+            </button>
+
+        </div>
+
+        <div id="companies-page-list" class="company-list"></div>
+
+    </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>

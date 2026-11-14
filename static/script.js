@@ -1,259 +1,637 @@
+let quizData = {};
+let progressData = {};
 
-// ---------------- NAVIGATION ----------------
+let activeSection = "";
+let activeTopic = "";
 
-function showPage(page) {
-    document.querySelectorAll(".page").forEach(section => {
-        section.classList.add("hidden");
-    });
+const $ = id => document.getElementById(id);
 
-    document.getElementById(page).classList.remove("hidden");
-
-    if (page === "dashboard") loadDashboard();
-    if (page === "aptitude") loadTasks("Aptitude");
-    if (page === "coding") loadTasks("Coding");
-    if (page === "interview") loadTasks("Interview");
-    if (page === "companies") loadCompanies();
-}
+const sectionNames = {
+    aptitude: "Aptitude",
+    coding: "Coding",
+    interview: "Interview"
+};
 
 
-// ---------------- DASHBOARD ----------------
+// API FUNCTION
 
-async function loadDashboard() {
-    const response = await fetch("/api/dashboard");
-    const data = await response.json();
+async function api(url, options = {}) {
 
-    document.getElementById("total").textContent = data.total;
-    document.getElementById("completed").textContent = data.completed;
-    document.getElementById("companiesCount").textContent = data.companies;
-    document.getElementById("progress").textContent = data.progress + "%";
-
-    document.getElementById("progressBar").style.width =
-        data.progress + "%";
-
-    document.getElementById("progressText").textContent =
-        data.progress + "% Completed";
-
-    document.getElementById("aptitudeCount").textContent = data.aptitude;
-    document.getElementById("codingCount").textContent = data.coding;
-    document.getElementById("interviewCount").textContent = data.interviews;
-}
-
-
-// ---------------- ADD TASK ----------------
-
-async function addTask(category, inputId) {
-    const input = document.getElementById(inputId);
-    const title = input.value.trim();
-
-    if (!title) {
-        alert("Please enter a topic or problem");
-        return;
-    }
-
-    let difficulty = "Medium";
-
-    if (category === "Coding") {
-        difficulty = document.getElementById("codingDifficulty").value;
-    }
-
-    const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            category: category,
-            title: title,
-            difficulty: difficulty
-        })
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-        alert(data.error || "Unable to add task");
-        return;
+        throw new Error(data.error || "Request failed.");
     }
 
-    input.value = "";
-
-    loadTasks(category);
-    loadDashboard();
+    return data;
 }
 
 
-// ---------------- DISPLAY TASKS ----------------
+// SHOW PAGES
 
-async function loadTasks(category) {
-    const response = await fetch(
-        "/api/tasks?category=" + encodeURIComponent(category)
-    );
+function showView(id) {
 
-    const tasks = await response.json();
+    document.querySelectorAll(".view").forEach(view => {
+        view.classList.add("hidden");
+    });
 
-    const listId = {
-        "Aptitude": "aptitudeList",
-        "Coding": "codingList",
-        "Interview": "interviewList"
-    }[category];
+    $(id).classList.remove("hidden");
 
-    const container = document.getElementById(listId);
-    container.innerHTML = "";
+    document.querySelectorAll(".nav-link").forEach(button => {
 
-    if (tasks.length === 0) {
-        container.innerHTML = "<p>No tasks added yet.</p>";
-        return;
-    }
-
-    tasks.forEach(task => {
-        const div = document.createElement("div");
-        div.className = "task";
-
-        const info = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = task.title;
-
-        const details = document.createElement("p");
-        details.textContent =
-            task.difficulty + " | " + task.status;
-
-        info.append(title, details);
-
-        const actions = document.createElement("div");
-
-        const complete = document.createElement("button");
-        complete.textContent =
-            task.status === "Completed" ? "Undo" : "Complete";
-
-        complete.onclick = () => updateTask(
-            task.id,
-            task.status === "Completed" ? "Pending" : "Completed",
-            category
+        button.classList.toggle(
+            "active",
+            button.dataset.view === id.replace("-view", "")
         );
 
-        const remove = document.createElement("button");
-        remove.textContent = "Delete";
-        remove.className = "delete";
-        remove.onclick = () => deleteTask(task.id, category);
-
-        actions.append(complete, remove);
-        div.append(info, actions);
-        container.appendChild(div);
     });
 }
 
 
-// ---------------- UPDATE TASK ----------------
+// STATUS BADGE
 
-async function updateTask(id, status, category) {
-    await fetch("/api/tasks/" + id, {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({status: status})
-    });
+function badge(status) {
 
-    loadTasks(category);
-    loadDashboard();
+    return `
+        <span class="status ${
+            status === "Completed" ? "completed" : "pending"
+        }">
+            ${status}
+        </span>
+    `;
 }
 
 
-// ---------------- DELETE TASK ----------------
+// LOAD DATA
 
-async function deleteTask(id, category) {
-    if (!confirm("Are you sure you want to delete this task?")) return;
+async function loadAll() {
 
-    await fetch("/api/tasks/" + id, {
+    [quizData, progressData] = await Promise.all([
+        api("/api/quizzes"),
+        api("/api/progress")
+    ]);
+
+    renderDashboard();
+}
+
+
+// DASHBOARD
+
+function renderDashboard() {
+
+    $("overall-percent").textContent =
+        `${progressData.percentage}%`;
+
+    $("overall-bar").style.width =
+        `${progressData.percentage}%`;
+
+    $("completed-count").textContent =
+        `${progressData.completed} / ${progressData.total}`;
+
+    $("pending-count").textContent =
+        progressData.total - progressData.completed;
+
+
+    $("dashboard-sections").innerHTML =
+        Object.entries(quizData).map(([key, section]) => {
+
+            const topics = Object.values(
+                progressData.topics[key]
+            );
+
+            const done = topics.filter(
+                topic => topic.status === "Completed"
+            ).length;
+
+            return `
+                <article class="section-card">
+
+                    <h3>${section.title}</h3>
+
+                    <p>
+                        ${done} of ${topics.length}
+                        topics completed
+                    </p>
+
+                    <div class="progress-track">
+                        <div class="progress-fill"
+                             style="width:${
+                                 topics.length
+                                     ? done / topics.length * 100
+                                     : 0
+                             }%">
+                        </div>
+                    </div>
+
+                    <button class="primary-btn"
+                            onclick="openSection('${key}')">
+                        View quizzes
+                    </button>
+
+                </article>
+            `;
+
+        }).join("");
+
+    loadCompanies();
+}
+
+
+// OPEN SECTION
+
+function openSection(section) {
+
+    activeSection = section;
+
+    $("section-title").textContent =
+        sectionNames[section];
+
+    $("topic-list").innerHTML =
+        Object.entries(quizData[section].topics)
+            .map(([topic, questions]) => {
+
+                const p = progressData.topics[section][topic];
+
+                return `
+                    <article class="topic-card">
+
+                        <h3>${topic}</h3>
+
+                        <p>
+                            ${questions.length} questions ·
+                            ${p.attempts} attempts
+                        </p>
+
+                        <p>
+                            Latest score: ${p.latest_score}%
+                        </p>
+
+                        ${badge(p.status)}
+
+                        <button class="primary-btn"
+                                onclick="startQuiz(
+                                    '${section}',
+                                    ${JSON.stringify(topic)}
+                                )">
+                            Start / Retake quiz
+                        </button>
+
+                    </article>
+                `;
+
+            }).join("");
+
+    showView("quiz-list-view");
+}
+
+
+// START QUIZ
+
+function startQuiz(section, topic) {
+
+    activeSection = section;
+    activeTopic = topic;
+
+    const questions = quizData[section].topics[topic];
+
+    $("quiz-section-label").textContent =
+        sectionNames[section];
+
+    $("quiz-topic-title").textContent = topic;
+
+    $("question-count").textContent =
+        `${questions.length} Questions`;
+
+    $("quiz-result").classList.add("hidden");
+
+    $("quiz-form").classList.remove("hidden");
+
+
+    $("question-container").innerHTML =
+        questions.map((q, i) => {
+
+            return `
+                <article class="question-card">
+
+                    <h3>
+                        ${i + 1}. ${q.question}
+                    </h3>
+
+                    ${q.options.map((option, j) => {
+
+                        return `
+                            <label class="option">
+
+                                <input
+                                    type="radio"
+                                    name="question-${i}"
+                                    value="${j}"
+                                    required
+                                >
+
+                                <span>${option}</span>
+
+                            </label>
+                        `;
+
+                    }).join("")}
+
+                </article>
+            `;
+
+        }).join("");
+
+    showView("quiz-view");
+}
+
+
+// SUBMIT QUIZ
+
+$("quiz-form").addEventListener("submit", async event => {
+
+    event.preventDefault();
+
+    const questions =
+        quizData[activeSection].topics[activeTopic];
+
+    const answers = {};
+
+
+    for (let i = 0; i < questions.length; i++) {
+
+        const selected = document.querySelector(
+            `input[name="question-${i}"]:checked`
+        );
+
+        if (!selected) {
+            return alert("Please answer every question.");
+        }
+
+        answers[i] = Number(selected.value);
+    }
+
+
+    try {
+
+        const result = await api("/api/submit-quiz", {
+
+            method: "POST",
+
+            body: JSON.stringify({
+                section: activeSection,
+                topic: activeTopic,
+                answers: answers
+            })
+
+        });
+
+
+        progressData = await api("/api/progress");
+
+        renderDashboard();
+
+
+        $("quiz-form").classList.add("hidden");
+
+        const box = $("quiz-result");
+
+        box.classList.remove("hidden");
+
+        box.classList.toggle(
+            "perfect",
+            result.score === 100
+        );
+
+
+        box.innerHTML = `
+
+            <h3>
+                ${
+                    result.score === 100
+                        ? "🎉 Topic Completed!"
+                        : "Keep Practicing!"
+                }
+            </h3>
+
+            <p>
+                <strong>
+                    Your score: ${result.score}%
+                    (${result.correct}/${result.total})
+                </strong>
+            </p>
+
+            <p>
+                Status: ${badge(result.status)}
+            </p>
+
+            <p>
+                ${
+                    result.score === 100
+                        ? "Excellent! Every answer is correct."
+                        : "You need 100% to mark this topic Completed. Review the explanations and try again."
+                }
+            </p>
+
+            <h4>Answer Review</h4>
+
+            ${result.review.map((r, i) => `
+
+                <div class="review-item">
+
+                    <strong>
+                        ${i + 1}. ${r.question}
+                    </strong>
+
+                    <p class="${
+                        r.is_correct
+                            ? "correct-text"
+                            : "wrong-text"
+                    }">
+
+                        ${r.is_correct ? "Correct" : "Incorrect"}
+
+                    </p>
+
+                    <small>${r.explanation}</small>
+
+                </div>
+
+            `).join("")}
+
+            <button class="primary-btn"
+                    onclick="startQuiz(
+                        '${activeSection}',
+                        ${JSON.stringify(activeTopic)}
+                    )">
+                Retake Quiz
+            </button>
+
+            <button class="text-btn"
+                    onclick="openSection('${activeSection}')">
+                Back to Topics
+            </button>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+});
+
+
+// NAVIGATION
+
+document.querySelectorAll(".nav-link").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        const view = button.dataset.view;
+
+        if (
+            ["aptitude", "coding", "interview"].includes(view)
+        ) {
+
+            openSection(view);
+
+        } else if (view === "companies") {
+
+            showView("companies-view");
+
+            loadCompanies();
+
+        } else {
+
+            showView("dashboard-view");
+
+        }
+
+    });
+
+});
+
+
+// BACK BUTTON
+
+$("back-to-topics").addEventListener("click", () => {
+
+    openSection(activeSection);
+
+});
+
+
+// ADD COMPANY
+
+async function addCompany(nameId, roleId, statusId) {
+
+    try {
+
+        await api("/api/companies", {
+
+            method: "POST",
+
+            body: JSON.stringify({
+
+                company: $(nameId).value,
+
+                role: $(roleId).value,
+
+                status: $(statusId).value
+
+            })
+
+        });
+
+        $(nameId).value = "";
+        $(roleId).value = "";
+
+        loadCompanies();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+$("add-company").addEventListener("click", () => {
+
+    addCompany(
+        "company-name",
+        "job-role",
+        "company-status"
+    );
+
+});
+
+
+$("add-company-page").addEventListener("click", () => {
+
+    addCompany(
+        "company-name-page",
+        "job-role-page",
+        "company-status-page"
+    );
+
+});
+
+
+// LOAD COMPANIES
+
+async function loadCompanies() {
+
+    try {
+
+        const companies = await api("/api/companies");
+
+        const markup = companies.length
+
+            ? companies.map(c => `
+
+                <article class="company-item">
+
+                    <div>
+
+                        <strong>${escapeHtml(c.company)}</strong>
+
+                        <small>
+                            ${escapeHtml(c.role)} |
+                            ${escapeHtml(c.status)}
+                        </small>
+
+                    </div>
+
+                    <div class="company-actions">
+
+                        <select
+                            aria-label="Application status"
+                            onchange="changeCompanyStatus(
+                                ${c.id}, this.value
+                            )"
+                        >
+
+                            ${[
+                                "Applied",
+                                "Assessment",
+                                "Interview",
+                                "Selected",
+                                "Rejected"
+                            ].map(s => `
+                                <option ${
+                                    s === c.status ? "selected" : ""
+                                }>
+                                    ${s}
+                                </option>
+                            `).join("")}
+
+                        </select>
+
+                        <button class="delete-btn"
+                                onclick="removeCompany(${c.id})">
+                            Delete
+                        </button>
+
+                    </div>
+
+                </article>
+
+            `).join("")
+
+            : "<p>No company applications added yet.</p>";
+
+
+        $("dashboard-companies").innerHTML = markup;
+
+        $("companies-page-list").innerHTML = markup;
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+// UPDATE COMPANY STATUS
+
+async function changeCompanyStatus(id, status) {
+
+    try {
+
+        await api(`/api/companies/${id}`, {
+
+            method: "PUT",
+
+            body: JSON.stringify({ status })
+
+        });
+
+        loadCompanies();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+// DELETE COMPANY
+
+async function removeCompany(id) {
+
+    if (!confirm("Delete this company application?")) {
+        return;
+    }
+
+    await api(`/api/companies/${id}`, {
         method: "DELETE"
     });
 
-    loadTasks(category);
-    loadDashboard();
-}
-
-
-// ---------------- ADD COMPANY ----------------
-
-async function addCompany() {
-    const name = document.getElementById("companyName").value.trim();
-    const role = document.getElementById("companyRole").value.trim();
-    const status = document.getElementById("companyStatus").value;
-
-    if (!name || !role) {
-        alert("Enter company name and job role");
-        return;
-    }
-
-    const response = await fetch("/api/companies", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name, role, status})
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        alert(data.error || "Unable to add company");
-        return;
-    }
-
-    document.getElementById("companyName").value = "";
-    document.getElementById("companyRole").value = "";
-
     loadCompanies();
-    loadDashboard();
+
 }
 
 
-// ---------------- DISPLAY COMPANIES ----------------
+// HTML SAFETY
 
-async function loadCompanies() {
-    const response = await fetch("/api/companies");
-    const companies = await response.json();
+function escapeHtml(value) {
 
-    const container = document.getElementById("companyList");
-    container.innerHTML = "";
+    return String(value).replace(/[&<>"']/g, c => ({
 
-    if (companies.length === 0) {
-        container.innerHTML = "<p>No companies added yet.</p>";
-        return;
-    }
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
 
-    companies.forEach(company => {
-        const div = document.createElement("div");
-        div.className = "task";
+    }[c]));
 
-        const info = document.createElement("div");
-
-        const title = document.createElement("strong");
-        title.textContent = company.name;
-
-        const details = document.createElement("p");
-        details.textContent =
-            company.role + " | " + company.status;
-
-        info.append(title, details);
-
-        const remove = document.createElement("button");
-        remove.textContent = "Delete";
-        remove.className = "delete";
-
-        remove.onclick = async () => {
-            if (!confirm("Delete this company?")) return;
-
-            await fetch("/api/companies/" + company.id, {
-                method: "DELETE"
-            });
-
-            loadCompanies();
-            loadDashboard();
-        };
-
-        div.append(info, remove);
-        container.appendChild(div);
-    });
 }
 
 
-// ---------------- INITIAL LOAD ----------------
+// INITIALIZE
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadDashboard();
+loadAll().catch(error => {
+
+    console.error(error);
+
+    alert(
+        "Unable to load PrepPath. Check the Flask server and database."
+    );
+
 });

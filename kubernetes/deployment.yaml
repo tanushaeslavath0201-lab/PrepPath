@@ -1,0 +1,27 @@
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: preppath-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: preppath
+
+  template:
+    metadata:
+      labels:
+        app: preppath
+
+    spec:
+      containers:
+        - name: preppath-container
+          image: preppath:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 5000
